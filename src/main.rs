@@ -536,7 +536,7 @@ fn handle_run_cmd(u64_ctrl: &U64Controller, args: &ArgMatches) -> anyhow::Result
         use anyhow::anyhow;
         let path = Path::new(&filename);
         match path.extension().map(|e| e.to_ascii_lowercase()) {
-            Some(ext) if ext == "d64" => u64_ctrl.run_img_by_path(name),
+            Some(ext) if ext == "d64" || ext == "d71" || ext == "d81" => u64_ctrl.run_img_by_path(name),
             Some(ext) if ext == "prg" => u64_ctrl.run_prg_by_path(name),
             Some(ext) if ext == "crt" => u64_ctrl.run_crt_by_path(name),
             Some(ext) => Err(anyhow!(
@@ -588,7 +588,10 @@ fn upload_file<P: AsRef<std::path::Path>>(
     u64_ctrl: &U64Controller,
     local: P,
 ) -> anyhow::Result<String> {
-    let remote = "/Temp/ftpimage".to_string();
+    let remote = match local.as_ref().extension() {
+        Some(x) => "/Temp/ftpimage.".to_string() + &x.to_string_lossy(),
+        None => "/Temp/ftpimage".to_string(),
+    };    
     let mut reader = std::fs::File::open(local)?;
     let mut ftp = u64ftp::U64Ftp::from_u64_ctrl(u64_ctrl)?;
     ftp.put(&mut reader, &remote)?;

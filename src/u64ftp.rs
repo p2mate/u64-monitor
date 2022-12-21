@@ -15,7 +15,7 @@
  */
 use crate::u64ctrl::U64Controller;
 use chrono::naive::datetime;
-use ftp::FtpStream;
+use ftp::{FtpStream, FtpError};
 use regex::Regex;
 use std::{
     fmt::{Display, Formatter},
@@ -178,7 +178,12 @@ impl U64Ftp {
         local: &mut R,
         remote: T,
     ) -> anyhow::Result<()> {
-        self.ftp.put(remote.as_ref(), local).map_err(|e| e.into())
+        let err = self.ftp.put(remote.as_ref(), local);
+        match err {
+            Err(FtpError::InvalidResponse(e)) if e.starts_with("452") => { Ok(())},
+            _ => err
+        }
+        .map_err(|e| e.into())
     }
 
     pub fn get<T: AsRef<str>>(&mut self, remote: T) -> anyhow::Result<std::io::Cursor<Vec<u8>>> {
